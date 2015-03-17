@@ -5288,9 +5288,9 @@ void CClientGame::SendProjectileSync ( CClientProjectile * pProjectile )
         CClientEntity * pOriginSource = NULL;
         eWeaponType weaponType = pProjectile->GetWeaponType ();
         CClientEntity * pTarget = pProjectile->GetTargetEntity ();
-        origin.data.vecPosition = *pProjectile->GetOrigin ();        
+        pProjectile->GetPosition ( origin.data.vecPosition );
 
-        // Is this a heatseaking missile with a target? sync it relative to the target
+        // Is this a heat seeking missile with a target? sync it relative to the target
         if ( weaponType == WEAPONTYPE_ROCKET_HS && pTarget && !pTarget->IsLocalEntity () )
             pOriginSource = pTarget;
 

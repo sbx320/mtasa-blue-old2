@@ -27,34 +27,16 @@ class CClientProjectileManager;
 class CClientPed;
 class CClientVehicle;
 
-class CProjectileInitiateData
-{
-public:
-    inline          CProjectileInitiateData ( void )
-    {
-        pvecPosition = NULL; pvecRotation = NULL;
-        pvecVelocity = NULL; usModel = 0;
-    }
-    inline          ~CProjectileInitiateData ( void )
-    {
-        if ( pvecPosition ) delete pvecPosition;
-        if ( pvecRotation ) delete pvecRotation;
-        if ( pvecVelocity ) delete pvecVelocity;
-    }
-    CVector * pvecPosition;
-    CVector * pvecRotation;    
-    CVector * pvecVelocity;    
-    unsigned short usModel;
-};
 
-class CClientProjectile : public CClientEntity
+class CClientProjectile : public CClientStreamElement
 {
-    DECLARE_CLASS( CClientProjectile, CClientEntity )
+    DECLARE_CLASS( CClientProjectile, CClientStreamElement )
     friend class CClientProjectileManager;
     friend class CClientPed;
     friend class CClientVehicle;
 public:
-                                        CClientProjectile       ( class CClientManager* pManager,
+                                        /* SA Constructor, should be cleaned up fixme: sbx320 */
+                                        CClientProjectile ( class CClientManager* pManager,
                                                                   CProjectile* pProjectile,
                                                                   CProjectileInfo* pProjectileInfo,
                                                                   CClientEntity * pCreator,
@@ -64,18 +46,27 @@ public:
                                                                   CVector * pvecTarget,
                                                                   float fForce,
                                                                   bool bLocal );
+                                        /* MTA Constructor */
+                                        CClientProjectile ( class CClientManager* pManager,
+                                                            CClientEntity * pCreator,
+                                                            CClientEntity * pTarget,
+                                                            eWeaponType weaponType,
+                                                            const CVector& vecOrigin,
+                                                            const CVector& vecVelocity,
+                                                            const CVector& vecRotation,
+                                                            float fForce,
+                                                            unsigned short usModel,
+                                                            bool bLocal );
+
                                         ~CClientProjectile      ( void );
 
     eClientEntityType                   GetType                 ( void ) const                      { return CCLIENTPROJECTILE; }
     inline CEntity*                     GetGameEntity           ( void )                            { return m_pProjectile; }
-    inline const CEntity*               GetGameEntity           ( void ) const                      { return m_pProjectile; }
     void                                Unlink                  ( void );
 
 
     void                                DoPulse                 ( void );
-    void                                Initiate                ( CVector& vecPosition, CVector& vecRotation, CVector& vecVelocity, unsigned short usModel );
-    void                                Destroy                 ( bool bBlow = true );
-
+    
     bool                                IsActive                ( void );
     bool                                GetMatrix               ( CMatrix & matrix ) const;
     bool                                SetMatrix               ( const CMatrix & matrix );
@@ -94,12 +85,21 @@ public:
     inline CClientEntity *              GetCreator              ( void )        { return m_pCreator; }
     inline CClientEntity *              GetTargetEntity         ( void )        { return m_pTarget; }
     inline eWeaponType                  GetWeaponType           ( void )        { return m_weaponType; }
-    inline CVector *                    GetOrigin               ( void )        { return m_pvecOrigin; }
-    inline CVector *                    GetTarget               ( void )        { return m_pvecTarget; }
     inline float                        GetForce                ( void )        { return m_fForce; }
     inline bool                         IsLocal                 ( void )        { return m_bLocal; }
     CClientEntity*                      GetSatchelAttachedTo    ( void );
-    
+
+    void                                SetFrozen ( bool bFrozen );
+    bool                                IsFrozen ( );
+
+    void                                StreamIn                ( bool bInstantly );
+    void                                StreamOut               ( void );
+
+    void                                Create                  ( void );
+    void                                Destroy                 ( bool bBlow = true );
+
+    void                                StreamedInPulse         ( void );
+    inline bool                         StreamingOut            ( void ) { return m_bStreamingOut; }
 protected:
     CClientProjectileManager*           m_pProjectileManager;
     bool                                m_bLinked;
@@ -110,15 +110,20 @@ protected:
     CClientEntityPtr                    m_pCreator;
     CClientEntityPtr                    m_pTarget;
     eWeaponType                         m_weaponType;
-    CVector *                           m_pvecOrigin;
-    CVector *                           m_pvecTarget;
     float                               m_fForce;
     bool                                m_bLocal;
     long long                           m_llCreationTime;
-
-    bool                                m_bInitiate;
-    CProjectileInitiateData *           m_pInitiateData;
     bool                                m_bCorrected;
+
+    CVector                             m_vecPosition;
+    CVector                             m_vecRotation;
+    CVector                             m_vecVelocity;
+    
+    unsigned short                      m_usModel;
+    DWORD                               m_dwCounter;
+    bool                                m_bStreamingOut;
+    bool                                m_bFrozen;
+    CMatrix                             m_matFrozen;
 };
 
 #endif

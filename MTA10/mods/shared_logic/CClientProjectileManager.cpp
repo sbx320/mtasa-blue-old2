@@ -28,6 +28,7 @@ CClientProjectileManager::CClientProjectileManager ( CClientManager * pManager )
 
     m_bIsLocal = false;
     m_pCreator = NULL;
+    m_pStreamingIn = NULL;
 
     m_bCreating = false;
     m_pLastCreated = NULL;
@@ -47,16 +48,14 @@ void CClientProjectileManager::DoPulse ( void )
     CElementDeleter* pElementDeleter = g_pClientGame->GetElementDeleter();
     CClientProjectile* pProjectile = NULL;
     list < CClientProjectile* > cloneList = m_List;
-    list < CClientProjectile* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end () ; ++iter )
-    {
-        pProjectile = *iter;
 
-        // Is this projectile still active?
-        if ( pProjectile->IsActive () )
-        {
-            pProjectile->DoPulse ();
-        }
+    for ( auto pProjectile : cloneList )
+    {
+        pProjectile->DoPulse ( );
+
+        // Streamed out and supposed to be gone? 
+        if ( pProjectile->GetCounter ( ) <= 0 && !pProjectile->IsStreamedIn ( ) )
+            pElementDeleter->Delete ( pProjectile );
     }
 }
 
@@ -64,11 +63,12 @@ void CClientProjectileManager::DoPulse ( void )
 void CClientProjectileManager::RemoveAll ( void )
 {
     list < CClientProjectile * > cloneList = m_List;
-    list < CClientProjectile* > ::iterator iter = cloneList.begin ();
-    for ( ; iter != cloneList.end () ; ++iter )
+
+    for ( auto pProjectile : cloneList )
     {
-        delete *iter;
+        delete pProjectile;
     }
+
     m_List.clear ();
 }
 
@@ -88,8 +88,6 @@ bool CClientProjectileManager::Exists ( CClientProjectile * pProjectile )
 
 CClientProjectile* CClientProjectileManager::Get ( CEntitySAInterface * pProjectile )
 {
-    int iCount = m_List.size();
-    assert ( iCount <= 32 );
     list < CClientProjectile* > ::iterator iter = m_List.begin ();
     for ( ; iter != m_List.end () ; iter++ )
     {
@@ -100,6 +98,26 @@ CClientProjectile* CClientProjectileManager::Get ( CEntitySAInterface * pProject
     }
     return NULL;
 }
+
+
+unsigned int CClientProjectileManager::CountStreamedIn ( )
+{
+    unsigned int count = 0;
+    for (auto pProjectile : m_List )
+    {
+        if ( pProjectile->IsStreamedIn ( ) )
+            count++;
+    }
+    return count;
+}
+
+
+bool CClientProjectileManager::IsProjectileLimitReached ( )
+{
+    // We use 31 here rather than 32 (the actual limit) to allow GTA to create a projectile at any time
+    return g_pProjectileManager->CountStreamedIn ( ) >= 31;
+}
+
 
 void CClientProjectileManager::RemoveFromList ( CClientProjectile* pProjectile )
 {
@@ -124,7 +142,7 @@ bool CClientProjectileManager::Hook_ProjectileAllow ( CEntity * pGameCreator, eW
     m_pCreator = m_pManager->FindEntity ( pGameCreator, true );
     m_bIsLocal = ( m_pCreator == pLocalPlayer || ( pLocalPlayer->GetOccupiedVehicleSeat () == 0 && m_pCreator == pLocalPlayer->GetOccupiedVehicle () ) ); 
 
-    return ( m_bCreating || m_bIsLocal );
+    return ( m_bCreating || m_bIsLocal || m_pStreamingIn);
 }
 
 
@@ -136,37 +154,47 @@ void CClientProjectileManager::Hook_StaticProjectileCreation ( CEntity* pGameCre
 
 void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget )
 {
-    // Called on projectile construction (projectile doesn't actually exist until the next frame)
-    /* Projectiles:
-    WEAPONTYPE_GRENADE, WEAPONTYPE_TEARGAS, WEAPONTYPE_MOLOTOV,
-    WEAPONTYPE_REMOTE_SATCHEL_CHARGE, WEAPONTYPE_ROCKET, WEAPONTYPE_ROCKET_HS,
-    WEAPONTYPE_FLARE, WEAPONTYPE_FREEFALL_BOMB */
-
-    CClientEntity * pTarget = m_pManager->FindEntity ( pGameTarget, true );
-    m_pLastCreated = new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, target, fForce, m_bIsLocal );
+    // Called on projectile construction 
+    if ( m_pStreamingIn != NULL )
+    {
+        // If we are creating or streaming in, do not create a new projectile element
+        m_pStreamingIn->m_pProjectile = pGameProjectile;
+        m_pStreamingIn->m_pProjectileInfo = pProjectileInfo;
+        return;
+    }
+    else
+    {
+        // SA created a projectile, so let's create an element for it
+        CClientEntity * pTarget = m_pManager->FindEntity ( pGameTarget, true );
+        new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, target, fForce, m_bIsLocal );
+    }
 }
 
-
-CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, float fForce, CVector * target, CClientEntity * pTargetEntity )
+CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, CVector& vecVelocity, CVector& vecRotation, float fForce, CClientEntity * pTargetEntity, unsigned short usModel )
 {
-    m_bCreating = true;
-    m_pLastCreated = NULL;
-    CEntity * pGameCreator = pCreator->GetGameEntity ();
-    CEntity * pGameTargetEntity = NULL;
-    if ( pTargetEntity ) pGameTargetEntity = pTargetEntity->GetGameEntity ();
-    if ( pGameCreator )
+    CClientPlayer * pLocalPlayer = m_pManager->GetPlayerManager ( )->GetLocalPlayer ( );
+    bool bLocal = ( pCreator == pLocalPlayer || ( pLocalPlayer->GetOccupiedVehicleSeat ( ) == 0 && m_pCreator == pLocalPlayer->GetOccupiedVehicle ( ) ) );
+    CClientProjectile *pProjectile = new CClientProjectile ( m_pManager, pCreator, pTargetEntity, eWeapon, vecOrigin, vecVelocity, vecRotation, fForce, usModel, bLocal );
+    return pProjectile;
+}
+
+bool CClientProjectileManager::Create ( CClientProjectile * pProjectile )
+{
+    m_pStreamingIn = pProjectile;
+    auto pCreator = pProjectile->GetCreator ( );
+    // Peds and players
+    if ( pCreator->GetType ( ) == CCLIENTPED || pCreator->GetType ( ) == CCLIENTPLAYER )
     {
-        // Peds and players
-        if ( pCreator->GetType () == CCLIENTPED || pCreator->GetType () == CCLIENTPLAYER ) {
-            CPed * pPed = dynamic_cast < CPed * > ( pGameCreator );
-            if ( pPed ) pPed->AddProjectile ( eWeapon, vecOrigin, fForce, target, pGameTargetEntity );
-        }
-        // Vehicles
-        else if ( pCreator->GetType () == CCLIENTVEHICLE ) {
-            CVehicle * pVehicle = dynamic_cast < CVehicle * > ( pGameCreator );
-            if ( pVehicle ) pVehicle->AddProjectile ( eWeapon, vecOrigin, fForce, target, pGameTargetEntity );
-        }
+        CPed * pPed = dynamic_cast <CPed *> ( pCreator->GetGameEntity ( ) );
+        if ( pPed ) pPed->AddProjectile ( pProjectile->GetWeaponType(), CVector(), 0.0f, NULL, NULL );
     }
-    m_bCreating = false;
-    return m_pLastCreated;
+    // Vehicles
+    else if ( pCreator->GetType ( ) == CCLIENTVEHICLE )
+    {
+        CVehicle * pVehicle = dynamic_cast <CVehicle *> ( pCreator->GetGameEntity() );
+        if ( pVehicle ) pVehicle->AddProjectile ( pProjectile->GetWeaponType ( ), CVector ( ), 0.0f, NULL, NULL );
+    }
+    m_pStreamingIn = NULL;
+
+    return true;
 }

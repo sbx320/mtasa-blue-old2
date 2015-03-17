@@ -14,16 +14,74 @@
 
 #define AIRBOMB_MAX_LIFETIME 60000
 
-/* An instance of this class is created when GTA creates a projectile, it automatically
-   destroys itself when GTA is finished with the projectile, this could/should eventually be
-   used as a server created element and streamed.
-*/
-CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjectile* pProjectile, CProjectileInfo* pProjectileInfo, CClientEntity * pCreator, CClientEntity * pTarget, eWeaponType weaponType, CVector * pvecOrigin, CVector * pvecTarget, float fForce, bool bLocal ) : ClassInit ( this ), CClientEntity ( INVALID_ELEMENT_ID )
+
+
+CClientProjectile::CClientProjectile ( CClientManager* pManager,
+                    CClientEntity * pCreator,
+                    CClientEntity * pTarget,
+                    eWeaponType weaponType,
+                    const CVector& vecOrigin,
+                    const CVector& vecVelocity,
+                    const CVector& vecRotation,
+                    float fForce,
+                    unsigned short usModel,
+                    bool bLocal )
+    : ClassInit ( this ), CClientStreamElement ( pManager->GetProjectileStreamer ( ), INVALID_ELEMENT_ID )
 {
     CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientProjectile" ), &m_pCreator, &m_pTarget, NULL );
 
     m_pManager = pManager;
-    m_pProjectileManager = pManager->GetProjectileManager ();
+    m_pProjectileManager = pManager->GetProjectileManager ( );
+    m_pProjectile = nullptr;
+    m_pProjectileInfo = nullptr;
+
+    SetTypeName ( "projectile" );
+
+    m_pCreator = pCreator;
+    m_pTarget = pTarget;
+    m_weaponType = weaponType;
+
+    m_vecRotation = vecRotation;
+    m_vecPosition = vecOrigin;
+    m_vecVelocity = vecVelocity;
+
+    if ( usModel == 0 )
+        usModel = CClientPickupManager::GetWeaponModel ( m_weaponType );
+
+    m_usModel = usModel;
+
+    m_fForce = fForce;
+    m_bLocal = bLocal;
+    m_llCreationTime = GetTickCount64_ ( );
+
+    m_pProjectileManager->AddToList ( this );
+    m_bLinked = true;
+
+    UpdateStreamPosition ( m_vecPosition );
+
+    if ( pCreator )
+    {
+        switch ( pCreator->GetType ( ) )
+        {
+            case CCLIENTPLAYER:
+            case CCLIENTPED:
+                static_cast <CClientPed *> ( pCreator )->AddProjectile ( this );
+                break;
+            case CCLIENTVEHICLE:
+                static_cast <CClientVehicle *> ( pCreator )->AddProjectile ( this );
+                break;
+            default: break;
+        }
+    }
+}
+
+CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjectile* pProjectile, CProjectileInfo* pProjectileInfo, CClientEntity * pCreator, CClientEntity * pTarget, eWeaponType weaponType, CVector * pvecOrigin, CVector * pvecTarget, float fForce, bool bLocal )
+    : ClassInit ( this ), CClientStreamElement ( pManager->GetProjectileStreamer ( ), INVALID_ELEMENT_ID )
+{
+    CClientEntityRefManager::AddEntityRefs ( ENTITY_REF_DEBUG ( this, "CClientProjectile" ), &m_pCreator, &m_pTarget, NULL );
+
+    m_pManager = pManager;
+    m_pProjectileManager = pManager->GetProjectileManager ( );
     m_pProjectile = pProjectile;
     m_pProjectileInfo = pProjectileInfo;
 
@@ -32,26 +90,25 @@ CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjecti
     m_pCreator = pCreator;
     m_pTarget = pTarget;
     m_weaponType = weaponType;
-    if ( pvecOrigin ) m_pvecOrigin = new CVector ( *pvecOrigin );
-    else m_pvecOrigin = NULL;
-    if ( pvecTarget ) m_pvecTarget = new CVector ( *pvecTarget );
-    else m_pvecTarget = NULL;
+
+    GetRotationDegrees ( m_vecRotation );
+    GetPosition ( m_vecPosition );
+
+    m_usModel = pProjectile->GetModelIndex ( );
+
     m_fForce = fForce;
     m_bLocal = bLocal;
-    m_llCreationTime = GetTickCount64_ ();
-
-    m_pInitiateData = NULL;
-    m_bInitiate = true;
+    m_llCreationTime = GetTickCount64_ ( );
 
     m_pProjectileManager->AddToList ( this );
     m_bLinked = true;
 
     if ( pCreator )
     {
-        switch ( pCreator->GetType () )
+        switch ( pCreator->GetType ( ) )
         {
             case CCLIENTPLAYER:
-            case CCLIENTPED:               
+            case CCLIENTPED:
                 static_cast < CClientPed * > ( pCreator )->AddProjectile ( this );
                 break;
             case CCLIENTVEHICLE:
@@ -68,25 +125,20 @@ CClientProjectile::~CClientProjectile ( void )
     // If our creator is getting destroyed, this should be null
     if ( m_pCreator )
     {
-        switch ( m_pCreator->GetType () )
+        switch ( m_pCreator->GetType ( ) )
         {
             case CCLIENTPLAYER:
             case CCLIENTPED:
-                static_cast < CClientPed * > ( (CClientEntity*)m_pCreator )->RemoveProjectile ( this );
+                static_cast < CClientPed * > ( (CClientEntity*) m_pCreator )->RemoveProjectile ( this );
                 break;
             case CCLIENTVEHICLE:
-                static_cast < CClientVehicle * > ( (CClientEntity*)m_pCreator )->RemoveProjectile ( this );
+                static_cast < CClientVehicle * > ( (CClientEntity*) m_pCreator )->RemoveProjectile ( this );
                 break;
             default: break;
         }
     }
 
-    if ( m_pvecOrigin ) delete m_pvecOrigin;
-    if ( m_pvecTarget ) delete m_pvecTarget;
-
-    if ( m_pInitiateData ) delete m_pInitiateData;
-
-    Unlink ();
+    Unlink ( );
 
     if ( m_pProjectile )
     {
@@ -105,7 +157,7 @@ void CClientProjectile::Unlink ( void )
     // Are we still linked? (this bool will be set to false when our manager is being destroyed)
     if ( m_bLinked )
     {
-        m_pProjectileManager->RemoveFromList ( this ); 
+        m_pProjectileManager->RemoveFromList ( this );
         m_bLinked = false;
         if ( m_pProjectile )
         {
@@ -120,78 +172,43 @@ void CClientProjectile::Unlink ( void )
 
 void CClientProjectile::DoPulse ( void )
 {
-    // We use initiate data to set values on creation (as it doesn't exist until a frame after our projectile hook)
-    if ( m_bInitiate )
+    if ( IsStreamedIn ( ) )
     {
-        if ( m_pInitiateData )
+        // Reset position/velocity if we are frozen
+        if ( m_bFrozen )
         {
-            if ( m_pInitiateData->pvecPosition ) SetPosition ( *m_pInitiateData->pvecPosition );
-            if ( m_pInitiateData->pvecRotation ) SetRotationRadians ( *m_pInitiateData->pvecRotation );
-            if ( m_pInitiateData->pvecVelocity ) SetVelocity ( *m_pInitiateData->pvecVelocity );
-            if ( m_pInitiateData->usModel ) SetModel ( m_pInitiateData->usModel );
+            CVector vecTemp;
+            m_pProjectile->SetMatrix ( &m_matFrozen );
+            m_pProjectile->SetMoveSpeed ( &vecTemp );
+            m_pProjectile->SetTurnSpeed ( &vecTemp );
         }
-
-        // Handle net sync and script event
-        g_pClientGame->ProjectileInitiateHandler ( this );
-
-        m_bInitiate = false;
+        else
+        {
+            // Projectile might be moving
+            CVector vecPosition;
+            GetPosition ( vecPosition );
+            UpdateStreamPosition ( vecPosition );
+        }
     }
 
+
     // Update our position/rotation if we're attached
-    DoAttaching ();
+    DoAttaching ( );
 
     if ( m_bCorrected == false &&
-        m_pProjectile != NULL && 
-        GetWeaponType ( ) == eWeaponType::WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
+         m_pProjectile != NULL &&
+         GetWeaponType ( ) == eWeaponType::WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
     {
         m_bCorrected = m_pProjectile->CorrectPhysics ( );
     }
 }
 
-
-void CClientProjectile::Initiate ( CVector& vecPosition, CVector& vecRotation, CVector& vecVelocity, unsigned short usModel )
-{
-#ifdef MTA_DEBUG
-    if ( m_pInitiateData ) _asm int 3
-#endif
-
-    // Store our initiation data
-    m_pInitiateData = new CProjectileInitiateData;
-    m_pInitiateData->pvecPosition = new CVector ( vecPosition );
-
-    if ( vecRotation != CVector ( 0, 0, 0 ) )
-    {
-        m_pInitiateData->pvecRotation = new CVector ( vecRotation );
-    }
-    else
-    {
-        m_pInitiateData->pvecRotation = NULL;
-    }
-
-    if ( vecVelocity != CVector(0,0,0) ) 
-        m_pInitiateData->pvecVelocity = new CVector ( vecVelocity );
-    else 
-        m_pInitiateData->pvecVelocity = NULL;
-
-    m_pInitiateData->usModel = usModel;
-}
-
-
-void CClientProjectile::Destroy ( bool bBlow )
-{
-    if ( m_pProjectile )
-    {
-        m_pProjectile->Destroy ( bBlow );
-    }
-}
-
-
 bool CClientProjectile::IsActive ( void )
 {
     // Ensure airbomb is cleaned up
-    if ( m_weaponType == WEAPONTYPE_FREEFALL_BOMB && GetTickCount64_ () - m_llCreationTime > AIRBOMB_MAX_LIFETIME )
+    if ( m_weaponType == WEAPONTYPE_FREEFALL_BOMB && GetTickCount64_ ( ) - m_llCreationTime > AIRBOMB_MAX_LIFETIME )
         return false;
-    return ( m_pProjectile && m_pProjectileInfo->IsActive () );
+    return ( m_pProjectile && m_pProjectileInfo->IsActive ( ) );
 }
 
 
@@ -222,7 +239,7 @@ bool CClientProjectile::SetMatrix ( const CMatrix & matrix_ )
 
     // Jax: If the creator is a ped, we need to invert X and Y on Direction and Was for CMultiplayer::ConvertEulerAnglesToMatrix
     if ( m_pCreator && IS_PED ( m_pCreator ) )
-    {        
+    {
         matrix.vFront.fX = 0.0f - matrix.vFront.fX;
         matrix.vFront.fY = 0.0f - matrix.vFront.fY;
         matrix.vUp.fX = 0.0f - matrix.vUp.fX;
@@ -238,9 +255,9 @@ bool CClientProjectile::SetMatrix ( const CMatrix & matrix_ )
 void CClientProjectile::GetPosition ( CVector & vecPosition ) const
 {
     if ( m_pProjectile )
-        vecPosition = *m_pProjectile->GetPosition ();
+        vecPosition = *m_pProjectile->GetPosition ( );
     else
-        vecPosition = CVector();
+        vecPosition = m_vecPosition;
 }
 
 
@@ -248,6 +265,8 @@ void CClientProjectile::SetPosition ( const CVector & vecPosition )
 {
     if ( m_pProjectile )
         m_pProjectile->SetPosition ( const_cast < CVector* > ( &vecPosition ) );
+
+    m_vecPosition = vecPosition;
 }
 
 
@@ -286,7 +305,7 @@ void CClientProjectile::GetVelocity ( CVector & vecVelocity )
     if ( m_pProjectile )
         m_pProjectile->GetMoveSpeed ( &vecVelocity );
     else
-        vecVelocity = CVector();
+        vecVelocity = m_vecVelocity;
 }
 
 
@@ -294,32 +313,38 @@ void CClientProjectile::SetVelocity ( CVector & vecVelocity )
 {
     if ( m_pProjectile )
         m_pProjectile->SetMoveSpeed ( &vecVelocity );
+
+    m_vecVelocity = vecVelocity;
 }
 
 unsigned short CClientProjectile::GetModel ( void )
 {
     if ( m_pProjectile )
-        return m_pProjectile->GetModelIndex ();
-    return 0;
+        return m_pProjectile->GetModelIndex ( );
+    return m_usModel;
 }
 
 void CClientProjectile::SetModel ( unsigned short usModel )
 {
     if ( m_pProjectile )
         m_pProjectile->SetModelIndex ( usModel );
+
+    m_usModel = usModel;
 }
 
 void CClientProjectile::SetCounter ( DWORD dwCounter )
 {
     if ( m_pProjectile )
         m_pProjectileInfo->SetCounter ( dwCounter );
+
+    m_dwCounter = dwCounter;
 }
 
 DWORD CClientProjectile::GetCounter ( void )
 {
     if ( m_pProjectile )
         return m_pProjectileInfo->GetCounter ( );
-    return 0;
+    return m_dwCounter;
 }
 
 CClientEntity* CClientProjectile::GetSatchelAttachedTo ( void )
@@ -333,4 +358,84 @@ CClientEntity* CClientProjectile::GetSatchelAttachedTo ( void )
         return NULL;
 
     return m_pManager->FindEntity ( pAttachedToSA, false );
+}
+
+
+void CClientProjectile::StreamIn ( bool bInstantly )
+{
+    Create ( );
+}
+
+
+
+void CClientProjectile::StreamOut ( )
+{
+    // We should have a projectile here
+    assert ( m_pProjectile );
+
+    GetPosition ( m_vecPosition );
+    GetRotationDegrees ( m_vecRotation );
+
+    m_pProjectile->GetMoveSpeed ( &m_vecVelocity );
+
+    // Do not explode when streaming out
+    Destroy ( false );
+}
+
+
+void CClientProjectile::Create ( void )
+{
+    if ( !m_pProjectileManager->Create ( this ) )
+        return NotifyUnableToCreate ( );
+
+    m_pProjectile->Teleport ( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
+    m_pProjectile->SetModelIndex ( m_usModel );
+    m_pProjectile->SetOrientation ( m_vecRotation.fX, m_vecRotation.fY, m_vecRotation.fZ );
+    m_pProjectile->SetMoveSpeed ( &m_vecVelocity );
+    m_pProjectileInfo->SetActive ( true );
+
+    // +1 to avoid projectiles never exploding
+    m_pProjectileInfo->SetCounter ( m_dwCounter - g_pGame->GetSystemTime ( ) + 1 );
+
+    if ( m_pCreator )
+        m_pProjectileInfo->SetCreator ( m_pCreator->GetGameEntity ( ) );
+    if ( m_pTarget )
+        m_pProjectileInfo->SetTarget ( m_pTarget->GetGameEntity ( ) );
+    m_pProjectileInfo->SetWeaponType ( m_weaponType );
+
+    NotifyCreate ( );
+}
+
+
+void CClientProjectile::Destroy ( bool bBlow )
+{
+    if ( m_pProjectile )
+    {
+        m_pProjectile->Destroy ( bBlow );
+        delete m_pProjectile;
+        m_pProjectile = NULL;
+        m_pProjectileInfo->SetActive ( false );
+        m_pProjectileInfo = NULL;
+    }
+}
+
+
+void CClientProjectile::SetFrozen ( bool bFrozen )
+{
+    if ( bFrozen != m_bFrozen )
+    {
+        CVector vecTemp;
+        if ( m_pProjectile )
+        {
+            m_pProjectile->GetMatrix ( &m_matFrozen );
+            m_pProjectile->SetMoveSpeed ( &vecTemp );
+            m_pProjectile->SetTurnSpeed ( &vecTemp );
+        }
+    }
+    m_bFrozen = bFrozen;
+}
+
+bool CClientProjectile::IsFrozen ( )
+{
+    return m_bFrozen;
 }

@@ -102,7 +102,7 @@ VOID InitShotsyncHooks()
     HookInstall ( HOOKPOS_CFireManager__StartFire, (DWORD)HOOK_CFireManager__StartFire, 6 );
     HookInstall ( HOOKPOS_CFireManager__StartFire_, (DWORD)HOOK_CFireManager__StartFire_, 6 );
     HookInstall ( HOOKPOS_CProjectileInfo__AddProjectile, (DWORD)HOOK_CProjectileInfo__AddProjectile, 7 );
-    HookInstall ( HOOKPOS_CProjectile__CProjectile, (DWORD)HOOK_CProjectile__CProjectile, 7 );
+    HookInstall ( HOOKPOS_CProjectile__CProjectile, (DWORD)HOOK_CProjectile__CProjectile, 6 );
     HookInstall ( HOOKPOS_IKChainManager_PointArm, (DWORD)HOOK_IKChainManager_PointArm, 7 );
     HookInstall ( HOOKPOS_IKChainManager_LookAt, (DWORD)HOOK_IKChainManager_LookAt, 7 );
     HookInstall ( HOOKPOS_IKChainManager_SkipAim, (DWORD)HOOK_SkipAim, 6 );
@@ -1031,7 +1031,7 @@ void _declspec(naked) HOOK_CProjectile__CProjectile()
     _asm
     {
         mov     dwProjectileInfoIndex, ebx // it happens to be in here, luckily
-        mov     pProjectile, ecx
+        mov     pProjectile, eax
         pushad
     }
 
@@ -1040,9 +1040,8 @@ void _declspec(naked) HOOK_CProjectile__CProjectile()
     _asm
     {
         popad
-        push    0xFFFFFFFF
-        mov     edx, RETURN_CProjectile__CProjectile
-        jmp     edx
+        add esp, 0x10
+        retn 4
     }
 }
 

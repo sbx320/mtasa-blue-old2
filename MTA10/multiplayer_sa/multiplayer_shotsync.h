@@ -36,7 +36,7 @@
 #define HOOKPOS_CFireManager__StartFire                 0x539F00
 #define HOOKPOS_CFireManager__StartFire_                0x53A050
 #define HOOKPOS_CProjectileInfo__AddProjectile          0x737C80
-#define HOOKPOS_CProjectile__CProjectile                0x5A4030
+#define HOOKPOS_CProjectile__CProjectile                0x5A40D1
 #define HOOKPOS_IKChainManager_PointArm                 0x618B66
 #define HOOKPOS_IKChainManager_LookAt                   0x618970
 #define HOOKPOS_IKChainManager_SkipAim                  0x62AEE7

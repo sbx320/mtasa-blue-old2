@@ -4549,10 +4549,11 @@ void CPacketHandler::Packet_ProjectileSync ( NetBitStreamInterface& bitStream )
                 if ( pVehicle ) pCreator = pVehicle;
             }
             
-            CClientProjectile * pProjectile = g_pClientGame->m_pManager->GetProjectileManager ()->Create ( pCreator, weaponType, origin.data.vecPosition, fForce, NULL, pTargetEntity );
+            CClientProjectile * pProjectile = g_pClientGame->m_pManager->GetProjectileManager ( )->Create ( pCreator, weaponType, origin.data.vecPosition, velocity.data.vecVelocity, rotation.data.vecRotation, fForce, pTargetEntity, usModel );
             if ( pProjectile )
             {
-                pProjectile->Initiate(origin.data.vecPosition, rotation.data.vecRotation, velocity.data.vecVelocity, usModel);
+                // sbx320: fixme
+                g_pClientGame->ProjectileInitiateHandler ( pProjectile );
             }
         }
     }

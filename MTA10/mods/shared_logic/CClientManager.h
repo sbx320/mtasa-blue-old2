@@ -92,6 +92,7 @@ public:
     inline CClientColManager*           GetColManager               ( void )        { return m_pColManager; }
     inline CClientGroups*               GetGroups                   ( void )        { return m_pGroups; }
     inline CClientProjectileManager*    GetProjectileManager        ( void )        { return m_pProjectileManager; }
+    inline CClientStreamer*             GetProjectileStreamer       ( void )        { return m_pProjectileStreamer; }
     inline CClientExplosionManager*     GetExplosionManager         ( void )        { return m_pExplosionManager; }
     inline CClientPacketRecorder*       GetPacketRecorder           ( void )        { return m_pPacketRecorder; }
     inline CClientWaterManager*         GetWaterManager             ( void )        { return m_pWaterManager; }
@@ -145,6 +146,7 @@ private:
     CClientColManager*                  m_pColManager;
     CClientGroups*                      m_pGroups;
     CClientProjectileManager*           m_pProjectileManager;
+    CClientStreamer*                    m_pProjectileStreamer;
     CClientExplosionManager*            m_pExplosionManager;
     CClientWeaponManager*               m_pWeaponManager;
     CClientEffectManager*               m_pEffectManager;

@@ -26,6 +26,7 @@ CClientManager::CClientManager ( void )
     m_pPickupStreamer = new CClientStreamer ( CClientPickupManager::IsPickupLimitReached, 100.0f, 300, 300 );
     m_pPlayerStreamer = new CClientStreamer ( CClientPlayerManager::IsPlayerLimitReached, 250.0f, 300, 300 );
     m_pVehicleStreamer = new CClientStreamer ( CClientVehicleManager::IsVehicleLimitReached, 250.0f, 300, 300 );
+    m_pProjectileStreamer = new CClientStreamer ( CClientProjectileManager::IsProjectileLimitReached, 500.0f, 300, 300 );
     m_pModelRequestManager = new CClientModelRequestManager;
 
     m_pGUIManager = new CClientGUIManager;
@@ -174,6 +175,9 @@ CClientManager::~CClientManager ( void )
 
     delete m_pPointLightsManager;
     m_pPointLightsManager = NULL;
+
+    delete m_pProjectileStreamer;
+    m_pProjectileStreamer = NULL;
 }
 
 //
@@ -245,6 +249,7 @@ void CClientManager::UpdateStreamers ( void )
         m_pPickupStreamer->DoPulse ( vecTemp );
         m_pPlayerStreamer->DoPulse ( vecTemp );
         m_pVehicleStreamer->DoPulse ( vecTemp );
+        m_pProjectileStreamer->DoPulse ( vecTemp );
     }
 }
 

@@ -6721,12 +6721,11 @@ CClientProjectile * CStaticFunctionDefinitions::CreateProjectile ( CResource& Re
                 case WEAPONTYPE_FREEFALL_BOMB:
                 case WEAPONTYPE_REMOTE_SATCHEL_CHARGE:
                 {
-                    CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, fForce, NULL, pTarget );
+                    CClientProjectile * pProjectile = m_pProjectileManager->Create ( &Creator, weaponType, vecOrigin, vecVelocity, vecRotation, fForce, pTarget, usModel );
                     if ( pProjectile )
                     {
-                        // Set our intiation data, which will be used on the next frame
-                        pProjectile->Initiate ( vecOrigin, vecRotation, vecVelocity, usModel );
                         pProjectile->SetParent ( Resource.GetResourceDynamicEntity() );
+                        g_pClientGame->ProjectileInitiateHandler ( pProjectile );
                         return pProjectile;
                     }
                     break;
