@@ -73,6 +73,9 @@ public:
     void                        InitHooks_VehicleDamage ( void );
     void                        InitHooks_Direct3D ( void );
     void                        InitHooks_FixLineOfSightArgs ( void );
+    void                        InitHooks_Projectile ( void );
+
+
     CRemoteDataStorage *        CreateRemoteDataStorage     ();
     void                        DestroyRemoteDataStorage    ( CRemoteDataStorage* pData );
     void                        AddRemoteDataStorage        ( CPlayerPed* pPed, CRemoteDataStorage* pData );

@@ -35,8 +35,6 @@
 #define HOOKPOS_CEventVehicleExplosion__AffectsPed      0x4B0E58
 #define HOOKPOS_CFireManager__StartFire                 0x539F00
 #define HOOKPOS_CFireManager__StartFire_                0x53A050
-#define HOOKPOS_CProjectileInfo__AddProjectile          0x737C80
-#define HOOKPOS_CProjectile__CProjectile                0x5A40D1
 #define HOOKPOS_IKChainManager_PointArm                 0x618B66
 #define HOOKPOS_IKChainManager_LookAt                   0x618970
 #define HOOKPOS_IKChainManager_SkipAim                  0x62AEE7
@@ -63,8 +61,6 @@ VOID HOOK_CEventDamage__AffectsPed ();
 VOID HOOK_CEventVehicleExplosion__AffectsPed ();
 VOID HOOK_CFireManager__StartFire ();
 VOID HOOK_CFireManager__StartFire_ ();
-VOID HOOK_CProjectileInfo__AddProjectile();
-VOID HOOK_CProjectile__CProjectile();
 VOID HOOK_IKChainManager_PointArm();
 VOID HOOK_IKChainManager_LookAt();
 VOID HOOK_SkipAim ();

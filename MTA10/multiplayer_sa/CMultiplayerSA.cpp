@@ -264,8 +264,6 @@ DWORD JMP_CEventVehicleDamageCollision_Bike_RETN = 0x6B8ECC;
 DWORD RETURN_CClothes_RebuildPlayera                        = 0x5A82C8;
 DWORD RETURN_CClothes_RebuildPlayerb                        = 0x5A837F;
 
-#define HOOKPOS_CProjectileInfo_FindPlayerPed               0x739321
-#define HOOKPOS_CProjectileInfo_FindPlayerVehicle           0x739570
 
 #define HOOKPOS_CHeli_ProcessHeliKill                       0x6DB201
 DWORD RETURN_CHeli_ProcessHeliKill_RETN_Cancel = 0x6DB9E0;
@@ -339,8 +337,6 @@ BulletFireHandler* m_pBulletFireHandler = NULL;
 DamageHandler* m_pDamageHandler = NULL;
 DeathHandler* m_pDeathHandler = NULL;
 FireHandler* m_pFireHandler = NULL;
-ProjectileHandler* m_pProjectileHandler = NULL;
-ProjectileStopHandler* m_pProjectileStopHandler = NULL;
 ProcessCamHandler* m_pProcessCamHandler = NULL;
 ChokingHandler* m_pChokingHandler = NULL;
 ExplosionHandler * m_pExplosionHandler = NULL;
@@ -491,7 +487,6 @@ void HOOK_CEventVehicleDamageCollision_Bike ( );
 
 void HOOK_CClothes_RebuildPlayer ();
 
-void HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPlayerVehicle ();
 
 void HOOK_CHeli_ProcessHeliKill ();
 
@@ -531,8 +526,6 @@ CMultiplayerSA::CMultiplayerSA()
     m_pDrawRadarAreasHandler = NULL;
     m_pDamageHandler = NULL;
     m_pFireHandler = NULL;
-    m_pProjectileHandler = NULL;
-    m_pProjectileStopHandler = NULL;
 
     MemSetFast ( &localStatsData, 0, sizeof ( CStatsData ) );
     localStatsData.StatTypesFloat [ 24 ] = 569.0f; // Max Health
@@ -693,10 +686,6 @@ void CMultiplayerSA::InitHooks()
 
     // Spider CJ fix
     HookInstall ( HOOKPOS_CClothes_RebuildPlayer, (DWORD)HOOK_CClothes_RebuildPlayer, 8 );
-
-    // Fix for projectiles firing too fast locally.
-    HookInstallCall ( (DWORD)HOOKPOS_CProjectileInfo_FindPlayerPed, (DWORD)HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPlayerVehicle );
-    HookInstallCall ( (DWORD)HOOKPOS_CProjectileInfo_FindPlayerVehicle, (DWORD)HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPlayerVehicle );
 
     HookInstall( (DWORD)HOOKPOS_CHeli_ProcessHeliKill, (DWORD)HOOK_CHeli_ProcessHeliKill, 6);
 
@@ -2103,16 +2092,6 @@ void CMultiplayerSA::DisableExplosions ( bool bDisabled )
 void CMultiplayerSA::SetExplosionHandler ( ExplosionHandler * pExplosionHandler )
 {
     m_pExplosionHandler = pExplosionHandler;
-}
-
-void CMultiplayerSA::SetProjectileHandler ( ProjectileHandler * pProjectileHandler )
-{
-    m_pProjectileHandler = pProjectileHandler;
-}
-
-void CMultiplayerSA::SetProjectileStopHandler ( ProjectileStopHandler * pProjectileHandler )
-{
-    m_pProjectileStopHandler = pProjectileHandler;
 }
 
 void CMultiplayerSA::SetBreakTowLinkHandler ( BreakTowLinkHandler * pBreakTowLinkHandler )
@@ -6362,18 +6341,6 @@ void _declspec(naked) HOOK_CClothes_RebuildPlayer ()
 }
 
 
-void _declspec(naked) HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPlayerVehicle ()
-{
-    // 00739559 E8 B2 4C E3 FF                          call    FindPlayerPed < HOOK >
-    // 00739570 E8 5B 4B E3 FF                          call    FindPlayerVehicle < HOOK >
-    // Checks if the creator is the local player ped or the creator is the local player peds vehicle else decreases the velocity substantially.
-    // We are forcing it to think the creator is not the local player ped or his vehicle for this specific check
-    _asm
-    {
-        xor eax, eax
-        retn
-    }
-}
 
 
 void CMultiplayerSA::SetAutomaticVehicleStartupOnPedEnter ( bool bSet )

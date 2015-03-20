@@ -36,15 +36,6 @@ CPedSAInterface * pPedInterfaceTemp;
 CPed * pPedTemp;
 CPed * pLocalPedTemp;
 CVector * vecOrigin;
-CEntitySAInterface * pProjectileOwner = 0;
-eWeaponType projectileWeaponType =WEAPONTYPE_UNARMED;
-CVector * projectileOrigin = NULL;
-float projectileForce = 0.0f;
-CVector * projectileTarget = NULL;
-CEntitySAInterface * projectileTargetEntityInterface = 0;
-CEntity* projectileTargetEntity = 0;
-class CProjectileSAInterface * pProjectile = 0;
-DWORD dwProjectileInfoIndex;
 bool bWeaponFire = false;
 
 CColPointSAInterface ** ppInstantHitColPoint;
@@ -75,13 +66,9 @@ extern BulletFireHandler* m_pBulletFireHandler;
 extern DamageHandler* m_pDamageHandler;
 extern DeathHandler* m_pDeathHandler;
 extern FireHandler* m_pFireHandler;
-extern ProjectileHandler* m_pProjectileHandler;
-extern ProjectileStopHandler* m_pProjectileStopHandler;
 
 char szDebug[255] = {'\0'};
 
-DWORD RETURN_CProjectile__AddProjectile = 0x401C3D;
-DWORD RETURN_CProjectile__CProjectile = 0x4037B3;
 CPools * m_pools = 0;
 
 #define VAR_CWorld_IncludeCarTyres 0xb7cd70 // Used for CWorld_ProcessLineOfSight
@@ -101,8 +88,6 @@ VOID InitShotsyncHooks()
     HookInstall ( HOOKPOS_CEventVehicleExplosion__AffectsPed, (DWORD)HOOK_CEventVehicleExplosion__AffectsPed, 5 );
     HookInstall ( HOOKPOS_CFireManager__StartFire, (DWORD)HOOK_CFireManager__StartFire, 6 );
     HookInstall ( HOOKPOS_CFireManager__StartFire_, (DWORD)HOOK_CFireManager__StartFire_, 6 );
-    HookInstall ( HOOKPOS_CProjectileInfo__AddProjectile, (DWORD)HOOK_CProjectileInfo__AddProjectile, 7 );
-    HookInstall ( HOOKPOS_CProjectile__CProjectile, (DWORD)HOOK_CProjectile__CProjectile, 6 );
     HookInstall ( HOOKPOS_IKChainManager_PointArm, (DWORD)HOOK_IKChainManager_PointArm, 7 );
     HookInstall ( HOOKPOS_IKChainManager_LookAt, (DWORD)HOOK_IKChainManager_LookAt, 7 );
     HookInstall ( HOOKPOS_IKChainManager_SkipAim, (DWORD)HOOK_SkipAim, 6 );
@@ -901,147 +886,6 @@ void _declspec(naked) HOOK_CFireManager__StartFire_()
 
         mov     eax, tempFire
         jmp     dwStoredReturn
-    }
-}
-
-bool ProcessProjectileAdd () 
-{
-    if ( m_pProjectileStopHandler )
-    {
-        CPools * pPools = pGameInterface->GetPools ();
-        CEntity * pOwner = NULL;
-        if ( pProjectileOwner )
-        {
-            switch ( pProjectileOwner->nType )
-            {
-                case ENTITY_TYPE_VEHICLE:
-                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_PED:
-                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    pOwner = NULL;
-            }
-        }
-    
-        if ( projectileTargetEntityInterface )
-        {
-            switch ( projectileTargetEntityInterface->nType )
-            {
-                case ENTITY_TYPE_VEHICLE:
-                    projectileTargetEntity = pPools->GetVehicle ( (DWORD *)projectileTargetEntityInterface );
-                    break;
-                case ENTITY_TYPE_PED:
-                    projectileTargetEntity = pPools->GetPed ( (DWORD *)projectileTargetEntityInterface );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    projectileTargetEntity = NULL;
-            }
-        }
-        return m_pProjectileStopHandler ( pOwner, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
-    }
-    return true;
-}
-    
-void ProcessProjectile ( )
-{
-    if ( m_pProjectileHandler != NULL )
-    {
-        CPoolsSA * pPools = (CPoolsSA*)pGameInterface->GetPools();
-        CEntity * pOwner = NULL;
-        if ( pProjectileOwner )
-        {
-            switch ( pProjectileOwner->nType )
-            {
-                case ENTITY_TYPE_VEHICLE:
-                    pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_PED:
-                    pOwner = pPools->GetPed ( (DWORD *)pProjectileOwner );
-                    break;
-                case ENTITY_TYPE_OBJECT:
-                    //pPools->GetObject ( (DWORD *)event->inflictor );
-                default:
-                    pOwner = NULL;
-            }
-        }
-
-        CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo()->GetProjectileInfo(dwProjectileInfoIndex);
-        CProjectile* projectile = pGameInterface->GetProjectileInfo()->GetProjectile(pProjectile);
-        projectile->SetProjectileInfo ( projectileInfo );
-        m_pProjectileHandler ( pOwner, projectile, projectileInfo, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
-        projectileTargetEntity = NULL;
-    }
-}
-
-// CProjectileInfo::AddProjectile(class CEntity * owner,enum eWeaponType weapon type
-// ,class CVector origin?,float 0?,class CVector * direction,class CEntity * target)
-void _declspec(naked) HOOK_CProjectileInfo__AddProjectile()
-{
-    _asm
-    {
-        mov     edx, [esp+4]
-        mov     pProjectileOwner, edx
-
-        mov     edx, [esp+8]
-        mov     projectileWeaponType, edx
-
-        lea     edx, [esp+12]
-        mov     projectileOrigin, edx
-
-        mov     edx, [esp+24]
-        mov     projectileForce, edx
-
-        mov     edx, [esp+28]
-        mov     projectileTarget, edx
-
-        mov     edx, [esp+32]
-        mov     projectileTargetEntityInterface, edx
-
-        pushad
-    }
-    if ( ProcessProjectileAdd() )
-    { // projectile should be created
-        _asm
-        {
-            popad
-            push    0xFFFFFFFF
-            mov     edx, RETURN_CProjectile__AddProjectile
-            jmp     edx
-        }
-    }
-    else
-    {
-        _asm
-        {
-            popad
-            xor al, al
-            retn
-        }
-    }
-}
-
-void _declspec(naked) HOOK_CProjectile__CProjectile()
-{
-    _asm
-    {
-        mov     dwProjectileInfoIndex, ebx // it happens to be in here, luckily
-        mov     pProjectile, eax
-        pushad
-    }
-
-    ProcessProjectile ();
-
-    _asm
-    {
-        popad
-        add esp, 0x10
-        retn 4
     }
 }
 
