@@ -100,6 +100,9 @@ CClientProjectile::CClientProjectile ( class CClientManager* pManager, CProjecti
     m_bLocal = bLocal;
     m_llCreationTime = GetTickCount64_ ( );
 
+    /* Since this is a GTA-created projectile we've already been streamed in */
+    m_bStreamedIn = true;
+
     m_pProjectileManager->AddToList ( this );
     m_bLinked = true;
 
@@ -371,7 +374,7 @@ void CClientProjectile::StreamIn ( bool bInstantly )
 void CClientProjectile::StreamOut ( )
 {
     // We should have a projectile here
-    assert ( m_pProjectile );
+    dassert ( m_pProjectile );
 
     GetPosition ( m_vecPosition );
     GetRotationDegrees ( m_vecRotation );
