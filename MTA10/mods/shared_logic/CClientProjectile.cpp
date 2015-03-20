@@ -358,7 +358,14 @@ CClientEntity* CClientProjectile::GetSatchelAttachedTo ( void )
 
 void CClientProjectile::StreamIn ( bool bInstantly )
 {
-    Create ( );
+    if ( m_pProjectile )
+    {
+        // This happens upon instantiation of a CClientProjectile for an already existing SA Projectile
+        NotifyCreate ( );
+        return;
+    }
+    else
+        Create ( );
 }
 
 
