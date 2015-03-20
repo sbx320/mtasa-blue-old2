@@ -36,10 +36,10 @@ public:
     unsigned int                    CountStreamedIn                     ( void );
 
     // * Game-layer wrapping *
-    static bool                     Hook_StaticProjectileAllow          ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity );
-    bool                            Hook_ProjectileAllow                ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity );
-    static void                     Hook_StaticProjectileCreation       ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
-    void                            Hook_ProjectileCreation             ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
+    static bool                     Hook_StaticProjectileAllow          ( CEntity * pGameCreator );
+    bool                            Hook_ProjectileAllow                ( CEntity * pGameCreator );
+    static void                     Hook_StaticProjectileCreation       ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
+    void                            Hook_ProjectileCreation             ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
     CClientProjectile *             Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, CVector& vecVelocity, CVector& vecRotation, float fForce, CClientEntity * pTargetEntity, unsigned short usModel );
     bool                            Create                              ( CClientProjectile* pProjectile );
 

@@ -14,6 +14,7 @@ void CMultiplayerSA::InitHooks_Projectile ( )
     m_pProjectileHandler = NULL;
     m_pProjectileStopHandler = NULL;
 
+    // Fix for projectiles firing too fast locally when created by a remote player
     const DWORD HOOKPOS_CProjectileInfo_FindPlayerPed = 0x739321;
     HookInstallCall ( HOOKPOS_CProjectileInfo_FindPlayerPed, (DWORD) HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPlayerVehicle );
     const DWORD HOOKPOS_CProjectileInfo_FindPlayerVehicle = 0x739570;
@@ -60,7 +61,7 @@ void _declspec( naked ) HOOK_CProjectileInfo_Update_FindLocalPlayer_FindLocalPla
     _asm
     {
         xor eax, eax
-            retn
+        retn
     }
 }
 
@@ -129,14 +130,14 @@ void _declspec( naked ) HOOK_CProjectile_FixExplosionLocation ( )
     _asm
     {
         popad
-            mov eax, [esi + 14h]
-            test eax, eax
-            jz skip
-            add eax, 30h
-            jmp RETURN_CProjectile_FixExplosionLocation
-skip :
+        mov eax, [esi + 14h]
+        test eax, eax
+        jz skip
+        add eax, 30h
+        jmp RETURN_CProjectile_FixExplosionLocation
+skip:
         lea eax, [esi + 4]
-            jmp RETURN_CProjectile_FixExplosionLocation
+        jmp RETURN_CProjectile_FixExplosionLocation
     }
 }
 
@@ -160,11 +161,12 @@ bool ProcessProjectileAdd ( )
     if ( m_pProjectileStopHandler )
     {
         CPools * pPools = pGameInterface->GetPools ( );
-
         CEntity * pOwner = pPools->GetEntity ( (DWORD*) pProjectileOwner );
+
+        // Store this for the CProjectile::CProjectile hook
         projectileTargetEntity = pPools->GetEntity ( (DWORD*) projectileTargetEntityInterface );
 
-        return m_pProjectileStopHandler ( pOwner, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
+        return m_pProjectileStopHandler ( pOwner );
     }
     return true;
 }
@@ -233,11 +235,10 @@ void ProcessProjectile ( )
     if ( m_pProjectileHandler != NULL )
     {
         CPoolsSA * pPools = (CPoolsSA*) pGameInterface->GetPools ( );
-        CEntity * pOwner = pPools->GetEntity ( (DWORD*) pProjectileOwner );
         CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo ( )->GetProjectileInfo ( dwProjectileInfoIndex );
         CProjectile* projectile = pGameInterface->GetProjectileInfo ( )->GetProjectile ( pProjectile );
         projectile->SetProjectileInfo ( projectileInfo );
-        m_pProjectileHandler ( pOwner, projectile, projectileInfo, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
+        m_pProjectileHandler ( projectile, projectileInfo, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
         projectileTargetEntity = NULL;
     }
 }

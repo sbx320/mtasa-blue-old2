@@ -49,8 +49,8 @@ typedef void ( BulletFireHandler ) ( class CPed* pInitiator, const CVector* pvec
 typedef bool ( DamageHandler ) ( class CPed* pDamagePed, class CEventDamage * pEvent );
 typedef void ( DeathHandler ) ( class CPed* pKilledPed, unsigned char ucDeathReason, unsigned char ucBodyPart );
 typedef void ( FireHandler ) ( class CFire* pFire );
-typedef bool ( ProjectileStopHandler ) ( class CEntity * owner, enum eWeaponType weaponType, class CVector * origin, float fForce, class CVector * target, class CEntity * targetEntity );
-typedef void ( ProjectileHandler ) ( class CEntity * owner, class CProjectile* projectile, class CProjectileInfo* projectileInfo, enum eWeaponType weaponType, class CVector * origin, float fForce, class CVector * target, class CEntity * targetEntity );
+typedef bool ( ProjectileStopHandler ) ( class CEntity * owner );
+typedef void ( ProjectileHandler ) ( class CProjectile* projectile, class CProjectileInfo* projectileInfo, enum eWeaponType weaponType, class CVector * origin, float fForce, class CVector * target, class CEntity * targetEntity );
 typedef bool ( BreakTowLinkHandler ) ( class CVehicle * towingVehicle );
 typedef bool ( ProcessCamHandler ) ( class CCam* pCam );
 typedef void ( DrawRadarAreasHandler ) ( void );

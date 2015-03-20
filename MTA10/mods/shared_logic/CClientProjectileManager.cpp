@@ -75,10 +75,9 @@ void CClientProjectileManager::RemoveAll ( void )
 
 bool CClientProjectileManager::Exists ( CClientProjectile * pProjectile )
 {
-    list < CClientProjectile* > ::iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end () ; iter++ )
+    for ( auto pIter : m_List )
     {
-        if ( *iter == pProjectile )
+        if ( pIter == pProjectile )
         {
             return true;
         }
@@ -88,12 +87,12 @@ bool CClientProjectileManager::Exists ( CClientProjectile * pProjectile )
 
 CClientProjectile* CClientProjectileManager::Get ( CEntitySAInterface * pProjectile )
 {
-    list < CClientProjectile* > ::iterator iter = m_List.begin ();
-    for ( ; iter != m_List.end () ; iter++ )
+    for ( auto pIter : m_List )
     {
-        if ( (*iter)->GetGameEntity ( )->GetInterface() == pProjectile )
+        if ( pIter->GetGameEntity ( ) != NULL && 
+             pIter->GetGameEntity ( )->GetInterface ( ) == pProjectile )
         {
-            return (*iter);
+            return pIter;
         }
     }
     return NULL;
@@ -125,13 +124,13 @@ void CClientProjectileManager::RemoveFromList ( CClientProjectile* pProjectile )
 }
 
 
-bool CClientProjectileManager::Hook_StaticProjectileAllow ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity )
+bool CClientProjectileManager::Hook_StaticProjectileAllow ( CEntity * pGameCreator )
 {
-    return g_pProjectileManager->Hook_ProjectileAllow ( pGameCreator, weaponType, origin, fForce, target, targetEntity );
+    return g_pProjectileManager->Hook_ProjectileAllow ( pGameCreator );
 }
 
 
-bool CClientProjectileManager::Hook_ProjectileAllow ( CEntity * pGameCreator, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * targetEntity )
+bool CClientProjectileManager::Hook_ProjectileAllow ( CEntity * pGameCreator )
 {
     // Called before projectile creation, we need to decide to allow or cancel it here
 
@@ -146,13 +145,13 @@ bool CClientProjectileManager::Hook_ProjectileAllow ( CEntity * pGameCreator, eW
 }
 
 
-void CClientProjectileManager::Hook_StaticProjectileCreation ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget )
+void CClientProjectileManager::Hook_StaticProjectileCreation ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * pvecTargetPos, CEntity * pGameTarget )
 {
-    g_pProjectileManager->Hook_ProjectileCreation ( pGameCreator, pGameProjectile, pProjectileInfo, weaponType, origin, fForce, target, pGameTarget );
+    g_pProjectileManager->Hook_ProjectileCreation ( pGameProjectile, pProjectileInfo, weaponType, origin, fForce, pvecTargetPos, pGameTarget );
 }
 
 
-void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget )
+void CClientProjectileManager::Hook_ProjectileCreation ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * pvecTargetPos, CEntity * pGameTarget )
 {
     // Called on projectile construction 
     if ( m_pStreamingIn != NULL )
@@ -166,7 +165,7 @@ void CClientProjectileManager::Hook_ProjectileCreation ( CEntity* pGameCreator, 
     {
         // SA created a projectile, so let's create an element for it
         CClientEntity * pTarget = m_pManager->FindEntity ( pGameTarget, true );
-        new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, target, fForce, m_bIsLocal );
+        new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, pvecTargetPos, fForce, m_bIsLocal );
     }
 }
 
