@@ -361,7 +361,7 @@ void CClientProjectile::StreamIn ( bool bInstantly )
     if ( m_pProjectile )
     {
         // This happens upon instantiation of a CClientProjectile for an already existing SA Projectile
-        NotifyCreate ( );
+        // Do not call NotifyCreate here
         return;
     }
     else
@@ -426,9 +426,9 @@ void CClientProjectile::SetFrozen ( bool bFrozen )
 {
     if ( bFrozen != m_bFrozen )
     {
-        CVector vecTemp;
         if ( m_pProjectile )
         {
+            CVector vecTemp;
             m_pProjectile->GetMatrix ( &m_matFrozen );
             m_pProjectile->SetMoveSpeed ( &vecTemp );
             m_pProjectile->SetTurnSpeed ( &vecTemp );
