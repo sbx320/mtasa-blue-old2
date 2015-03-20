@@ -147,7 +147,6 @@ CClientProjectile::~CClientProjectile ( void )
     {
         // Make sure we're destroyed
         delete m_pProjectile;
-
         m_pProjectile = NULL;
     }
 
@@ -162,13 +161,6 @@ void CClientProjectile::Unlink ( void )
     {
         m_pProjectileManager->RemoveFromList ( this );
         m_bLinked = false;
-        if ( m_pProjectile )
-        {
-            // Make sure we're destroyed
-            delete m_pProjectile;
-
-            m_pProjectile = NULL;
-        }
     }
 }
 
