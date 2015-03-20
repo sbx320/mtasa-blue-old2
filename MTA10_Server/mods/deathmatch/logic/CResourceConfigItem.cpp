@@ -79,6 +79,7 @@ bool CResourceConfigItem::Stop ( void )
     {
         delete m_pXMLFile;
         m_pXMLFile = NULL;
+        m_pXMLRootNode = NULL;
     }
 
     return true;
