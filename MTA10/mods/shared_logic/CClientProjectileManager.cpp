@@ -165,7 +165,8 @@ void CClientProjectileManager::Hook_ProjectileCreation ( CProjectile* pGameProje
     {
         // SA created a projectile, so let's create an element for it
         CClientEntity * pTarget = m_pManager->FindEntity ( pGameTarget, true );
-        new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, pvecTargetPos, fForce, m_bIsLocal );
+        auto pProjectile = new CClientProjectile ( m_pManager, pGameProjectile, pProjectileInfo, m_pCreator, pTarget, weaponType, origin, pvecTargetPos, fForce, m_bIsLocal );
+        g_pClientGame->ProjectileInitiateHandler ( pProjectile );
     }
 }
 
