@@ -33,8 +33,8 @@ void CMultiplayerSA::InitHooks_Projectile ( )
     HookInstall ( HOOKPOS_CProjectileInfo__AddProjectile, (DWORD) HOOK_CProjectileInfo__AddProjectile, 7 );
 
     // Hook for CProjectile::CProjectile (Post-Creation for above hook, but before application of velocity etc)
-    const DWORD HOOKPOS_CProjectile__CProjectile = 0x5A40D1;
-    HookInstall ( HOOKPOS_CProjectile__CProjectile, (DWORD) HOOK_CProjectile__CProjectile, 6 );
+    const DWORD HOOKPOS_CProjectile__CProjectile = 0x738792;
+    HookInstall ( HOOKPOS_CProjectile__CProjectile, (DWORD) HOOK_CProjectile__CProjectile, 9 );
 }
 
 void CMultiplayerSA::SetProjectileHandler ( ProjectileHandler * pProjectileHandler )
@@ -224,18 +224,20 @@ void _declspec( naked ) HOOK_CProjectileInfo__AddProjectile ( )
 // 
 // Hook for CProjectileInfo::AddProjectile
 //  Used to allow Core to be notified about a projectile creation
-//  At this point (default) velocity, origin, target etc. are not yet applied
 // 
-DWORD RETURN_CProjectile__CProjectile = 0x4037B3;
-class CProjectileSAInterface * pProjectile = NULL;
-DWORD dwProjectileInfoIndex;
+class CProjectileInfoSAInterface** ppProjectile = NULL;
+DWORD RETURN_CProjectile__AddProjectile_Process = 0x73879B;
 
 void ProcessProjectile ( )
 {
     if ( m_pProjectileHandler != NULL )
     {
+        auto pProjectile = *ppProjectile;
+        auto dwProjectileIndex = ( (DWORD) ppProjectile - 0xC89110 ) / 4;
+
+
         CPoolsSA * pPools = (CPoolsSA*) pGameInterface->GetPools ( );
-        CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo ( )->GetProjectileInfo ( dwProjectileInfoIndex );
+        CProjectileInfo * projectileInfo = pGameInterface->GetProjectileInfo ( )->GetProjectileInfo ( dwProjectileIndex );
         CProjectile* projectile = pGameInterface->GetProjectileInfo ( )->GetProjectile ( pProjectile );
         projectile->SetProjectileInfo ( projectileInfo );
         m_pProjectileHandler ( projectile, projectileInfo, projectileWeaponType, projectileOrigin, projectileForce, projectileTarget, projectileTargetEntity );
@@ -247,8 +249,7 @@ void _declspec( naked ) HOOK_CProjectile__CProjectile ( )
 {
     _asm
     {
-        mov     dwProjectileInfoIndex, ebx // it happens to be in here, luckily
-        mov     pProjectile, eax
+        mov     ppProjectile, edi
         pushad
     }
 
@@ -256,8 +257,12 @@ void _declspec( naked ) HOOK_CProjectile__CProjectile ( )
 
     _asm
     {
+        // replaced code
         popad
-        add esp, 0x10
-        retn 4
+        mov ecx, [edi]
+        push ecx
+        push ebx 
+        push 0x94
+        jmp RETURN_CProjectile__AddProjectile_Process
     }
 }

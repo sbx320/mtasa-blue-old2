@@ -45,6 +45,8 @@ CClientProjectile::CClientProjectile ( CClientManager* pManager,
     m_vecPosition = vecOrigin;
     m_vecVelocity = vecVelocity;
 
+    m_dwCounter = 5000;
+
     if ( usModel == 0 )
         usModel = CClientPickupManager::GetWeaponModel ( m_weaponType );
 
@@ -390,14 +392,18 @@ void CClientProjectile::Create ( void )
     if ( !m_pProjectileManager->Create ( this ) )
         return NotifyUnableToCreate ( );
 
-    m_pProjectile->Teleport ( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
+    if ( m_vecPosition != CVector ( 0, 0, 0 ) )
+        m_pProjectile->Teleport ( m_vecPosition.fX, m_vecPosition.fY, m_vecPosition.fZ );
     m_pProjectile->SetModelIndex ( m_usModel );
     m_pProjectile->SetOrientation ( m_vecRotation.fX, m_vecRotation.fY, m_vecRotation.fZ );
+
+    if ( m_vecVelocity != CVector ( 0, 0, 0 ) )
     m_pProjectile->SetMoveSpeed ( &m_vecVelocity );
     m_pProjectileInfo->SetActive ( true );
 
     // +1 to avoid projectiles never exploding
-    m_pProjectileInfo->SetCounter ( m_dwCounter - g_pGame->GetSystemTime ( ) + 1 );
+    if (m_dwCounter != 0 )
+        m_pProjectileInfo->SetCounter ( m_dwCounter + 1 );
 
     if ( m_pCreator )
         m_pProjectileInfo->SetCreator ( m_pCreator->GetGameEntity ( ) );

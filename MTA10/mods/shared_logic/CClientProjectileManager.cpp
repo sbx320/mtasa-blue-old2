@@ -170,7 +170,14 @@ void CClientProjectileManager::Hook_ProjectileCreation ( CProjectile* pGameProje
     }
 }
 
-CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, CVector& vecVelocity, CVector& vecRotation, float fForce, CClientEntity * pTargetEntity, unsigned short usModel )
+CClientProjectile * CClientProjectileManager::Create ( CClientEntity* pCreator, 
+                                                       eWeaponType eWeapon,
+                                                       CVector & vecOrigin,
+                                                       CVector& vecVelocity,
+                                                       CVector& vecRotation,
+                                                       float fForce, 
+                                                       CClientEntity * pTargetEntity, 
+                                                       unsigned short usModel )
 {
     CClientPlayer * pLocalPlayer = m_pManager->GetPlayerManager ( )->GetLocalPlayer ( );
     bool bLocal = ( pCreator == pLocalPlayer || ( pLocalPlayer->GetOccupiedVehicleSeat ( ) == 0 && m_pCreator == pLocalPlayer->GetOccupiedVehicle ( ) ) );
