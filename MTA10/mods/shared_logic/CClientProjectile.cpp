@@ -187,6 +187,16 @@ void CClientProjectile::DoPulse ( void )
             UpdateStreamPosition ( vecPosition );
         }
     }
+    else
+    {
+        // Streamed out and supposed to be gone? 
+        if ( m_dwCounter <= 0 && GetWeaponType ( ) != eWeaponType::WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
+        {
+            CElementDeleter* pElementDeleter = g_pClientGame->GetElementDeleter ( );
+            pElementDeleter->Delete ( this );
+        }
+            
+    }
 
 
     // Update our position/rotation if we're attached
@@ -402,8 +412,10 @@ void CClientProjectile::Create ( void )
     m_pProjectileInfo->SetActive ( true );
 
     // +1 to avoid projectiles never exploding
-    if (m_dwCounter != 0 )
-        m_pProjectileInfo->SetCounter ( m_dwCounter + 1 );
+    if ( m_dwCounter != 0 )
+    {
+        m_pProjectileInfo->SetCounter ( m_dwCounter );
+    }
 
     if ( m_pCreator )
         m_pProjectileInfo->SetCreator ( m_pCreator->GetGameEntity ( ) );

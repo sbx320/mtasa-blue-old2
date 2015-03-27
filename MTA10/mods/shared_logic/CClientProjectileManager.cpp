@@ -45,17 +45,12 @@ CClientProjectileManager::~CClientProjectileManager ( void )
 
 void CClientProjectileManager::DoPulse ( void )
 {
-    CElementDeleter* pElementDeleter = g_pClientGame->GetElementDeleter();
     CClientProjectile* pProjectile = NULL;
     list < CClientProjectile* > cloneList = m_List;
 
     for ( auto pProjectile : cloneList )
     {
         pProjectile->DoPulse ( );
-
-        // Streamed out and supposed to be gone? 
-        if ( pProjectile->GetCounter ( ) <= 0 && !pProjectile->IsStreamedIn ( ) )
-            pElementDeleter->Delete ( pProjectile );
     }
 }
 
