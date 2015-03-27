@@ -4851,30 +4851,38 @@ void CClientPed::DestroySatchelCharges ( bool bBlow, bool bDestroy )
     CClientProjectile * pProjectile = NULL;
     CVector vecPosition;
     
+    CElementDeleter* pElementDeleter = g_pClientGame->GetElementDeleter ( );
     list < CClientProjectile* > ::iterator iter = m_Projectiles.begin ();
     while ( iter != m_Projectiles.end () )
     {
         pProjectile = *iter;
-
-        if ( pProjectile->GetWeaponType () == WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
+        if ( pProjectile->IsStreamedIn ( ) )
         {
-            if ( bBlow )
+            if ( pProjectile->GetWeaponType ( ) == WEAPONTYPE_REMOTE_SATCHEL_CHARGE )
             {
-                pProjectile->GetPosition ( vecPosition );
-                CLuaArguments Arguments;
-                Arguments.PushNumber ( vecPosition.fX );
-                Arguments.PushNumber ( vecPosition.fY );
-                Arguments.PushNumber ( vecPosition.fZ );
-                Arguments.PushNumber ( EXP_TYPE_GRENADE );
-                bool bCancelExplosion = !CallEvent ( "onClientExplosion", Arguments, true );
+                if ( bBlow )
+                {
+                    pProjectile->GetPosition ( vecPosition );
+                    CLuaArguments Arguments;
+                    Arguments.PushNumber ( vecPosition.fX );
+                    Arguments.PushNumber ( vecPosition.fY );
+                    Arguments.PushNumber ( vecPosition.fZ );
+                    Arguments.PushNumber ( EXP_TYPE_GRENADE );
+                    bool bCancelExplosion = !CallEvent ( "onClientExplosion", Arguments, true );
 
-                if ( !bCancelExplosion )
-                    m_pManager->GetExplosionManager ()->Create ( EXP_TYPE_GRENADE, vecPosition, this, true, -1.0f, false, WEAPONTYPE_REMOTE_SATCHEL_CHARGE );
+                    if ( !bCancelExplosion )
+                        m_pManager->GetExplosionManager ( )->Create ( EXP_TYPE_GRENADE, vecPosition, this, true, -1.0f, false, WEAPONTYPE_REMOTE_SATCHEL_CHARGE );
+                }
+                if ( bDestroy )
+                {
+                    pProjectile->Destroy ( bBlow );
+                }
             }
-            if ( bDestroy )
-            {
-                pProjectile->Destroy ( bBlow );
-            }
+        }
+        else
+        {
+            // Not streamed in, simply remove
+            pElementDeleter->Delete ( pProjectile );
         }
         iter++;
     }

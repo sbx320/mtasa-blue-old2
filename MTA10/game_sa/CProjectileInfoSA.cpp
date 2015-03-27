@@ -220,7 +220,7 @@ bool CProjectileInfoSA::IsActive ( void )
 
 void CProjectileInfoSA::SetActive ( bool bActive )
 {
-    internalInterface->bProjectileActive = 1;
+    internalInterface->bProjectileActive = bActive ? 1 : 0;
 }
 
 void CProjectileInfoSA::SetCreator ( CEntity* pCreator )

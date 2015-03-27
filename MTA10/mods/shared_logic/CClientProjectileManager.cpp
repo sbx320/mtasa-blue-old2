@@ -200,3 +200,18 @@ bool CClientProjectileManager::Create ( CClientProjectile * pProjectile )
 
     return true;
 }
+
+void CClientProjectileManager::Hook_ProjectileDestruct ( CEntitySAInterface* pGameInterface )
+{
+    CClientProjectile *pProjectile = Get ( pGameInterface );
+
+    // Check if it's already gone
+    if ( !pProjectile )
+        return;
+
+    // Check if it's streaming out right now
+    if ( pProjectile->StreamingOut ( ) )
+        return;
+
+    CStaticFunctionDefinitions::DestroyElement ( *pProjectile );
+}

@@ -40,6 +40,8 @@ public:
     bool                            Hook_ProjectileAllow                ( CEntity * pGameCreator );
     static void                     Hook_StaticProjectileCreation       ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
     void                            Hook_ProjectileCreation             ( CProjectile* pGameProjectile, CProjectileInfo* pProjectileInfo, eWeaponType weaponType, CVector * origin, float fForce, CVector * target, CEntity * pGameTarget );
+    void                            Hook_ProjectileDestruct             ( CEntitySAInterface* pGameInterface );
+
     CClientProjectile *             Create ( CClientEntity* pCreator, eWeaponType eWeapon, CVector & vecOrigin, CVector& vecVelocity, CVector& vecRotation, float fForce, CClientEntity * pTargetEntity, unsigned short usModel );
     bool                            Create                              ( CClientProjectile* pProjectile );
 

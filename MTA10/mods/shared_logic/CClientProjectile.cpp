@@ -393,7 +393,9 @@ void CClientProjectile::StreamOut ( )
     m_pProjectile->GetMoveSpeed ( &m_vecVelocity );
 
     // Do not explode when streaming out
+    m_bStreamingOut = true;
     Destroy ( false );
+    m_bStreamingOut = false;
 }
 
 
