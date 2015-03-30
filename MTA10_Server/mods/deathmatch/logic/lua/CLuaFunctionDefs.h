@@ -479,10 +479,6 @@ public:
     LUA_DECLARE ( UtfCode );
     LUA_DECLARE ( GetValidPedModels );
 
-    // PCRE functions
-    LUA_DECLARE ( PregFind );
-    LUA_DECLARE ( PregReplace );
-    LUA_DECLARE ( PregMatch );
 
     // Loaded Map Functions
     LUA_DECLARE ( GetRootElement );

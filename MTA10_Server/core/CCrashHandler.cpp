@@ -18,7 +18,7 @@
 #endif
 
 #ifndef WIN32
-    #include <ncursesw/curses.h>
+    #include <curses.h>
     extern "C" WINDOW* m_wndMenu;
     extern "C" WINDOW* m_wndInput;
     extern "C" bool g_bNoCurses;

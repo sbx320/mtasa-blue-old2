@@ -252,7 +252,7 @@ void MixedReadGuiFontString ( CScriptArgReader& argStream, SString& strFontName,
 void MixedReadMaterialString ( CScriptArgReader& argStream, CClientMaterial*& pMaterialElement );
 bool ReadMatrix ( lua_State* luaVM, uint uiArgIndex, CMatrix& outMatrix );
 void MinClientReqCheck ( CScriptArgReader& argStream, const char* szVersionReq, const char* szReason );
-void ReadPregFlags( CScriptArgReader& argStream, pcrecpp::RE_Options& pOptions );
+
 
 
 //

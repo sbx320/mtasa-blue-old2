@@ -592,10 +592,6 @@ void CLuaManager::LoadCFunctions ( void )
     CLuaCFunctions::AddFunction ( "getValidPedModels", CLuaFunctionDefs::GetValidPedModels );
 
     // PCRE functions
-    CLuaCFunctions::AddFunction ( "pregFind", CLuaFunctionDefs::PregFind );
-    CLuaCFunctions::AddFunction ( "pregReplace", CLuaFunctionDefs::PregReplace );
-    CLuaCFunctions::AddFunction ( "pregMatch", CLuaFunctionDefs::PregMatch );
-
     // Loaded map funcs
     CLuaCFunctions::AddFunction ( "getRootElement", CLuaFunctionDefs::GetRootElement );
     CLuaCFunctions::AddFunction ( "loadMapData", CLuaFunctionDefs::LoadMapData );

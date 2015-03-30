@@ -49,7 +49,6 @@
 #include "Enums.h"
 #include "net/SyncStructures.h"
 #include "CIdArray.h"
-#include "pcrecpp.h"
 
 // Shared logic includes
 #include <Utils.h>
